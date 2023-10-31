@@ -1,0 +1,44 @@
+# Copyright Vespa.ai. Licensed under the terms of the Apache 2.0 license. See LICENSE in the project root.
+
+# A description of a type of data, how to store and index it, and what to compute over the data elements
+#
+# See:
+#  - https://docs.vespa.ai/en/schemas.html
+schema store {
+    document store {
+        field DocId type string {
+            indexing: summary
+        }
+
+        field ParentGuid type string {
+            indexing: summary
+        }
+
+        field Branch type string {
+            indexing: summary
+        }
+
+        field Timestamp type long {
+            indexing: summary | attribute
+        }
+
+        field DocContent type string {
+            indexing: summary
+        }
+        
+        field query_vector type tensor<float>(x[1536]) {
+            indexing: summary | attribute
+        }
+
+    }
+
+	rank-profile cosine-similarity {
+		first-phase {
+			expression: cosineSimilarity(query(query_vector), attribute(query_vector), x)
+		}
+		function cosineSimilarity(t1, t2, x) {
+			expression: reduce(t1*t2, sum, x) / sqrt(reduce(t1*t1, sum, x) * reduce(t2*t2, sum, x))
+		}
+	}
+
+}

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<services version="1.0">
+    <container id="default" version="1.0">
+      <search/>
+      <document-api/>
+	  	<nodes>
+        <node hostalias="node1"/>
+        <jvm gc-options="-XX:+UseG1GC -XX:MaxTenuringThreshold=10"
+         options="-XX:+PrintCommandLineFlags"
+         allocated-memory="50%" />
+		  </nodes>
+    </container>
+
+    <content id="mind" version="1.0">
+        <redundancy>1</redundancy>
+        <documents>
+            <document type="store" mode="index" />
+        </documents>
+		<nodes>
+			<node hostalias="node1" distribution-key="0"/>
+		</nodes>
+    </content>
+</services>
