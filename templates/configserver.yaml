@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vespa-configserver
+spec:
+  # Use three servers for proper ZooKeeper quorum:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vespa-configserver
+      name: vespa-internal
+  serviceName: vespa-internal
+  template:
+    metadata:
+      labels:
+        app: vespa-configserver
+        name: vespa-internal
+    spec:
+      initContainers:
+      - name: chown-var
+        securityContext:
+          runAsUser: 0
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000 /opt/vespa/var"]
+        volumeMounts:
+          - name: vespa-var
+            mountPath: /opt/vespa/var
+      - name: chown-logs
+        securityContext:
+          runAsUser: 0
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000 /opt/vespa/logs"]
+        volumeMounts:
+          - name: vespa-logs
+            mountPath: /opt/vespa/logs
+      containers:
+      - name: vespa-configserver
+        image: vespaengine/vespa
+        args: ["configserver,services"]
+        imagePullPolicy: Always
+        securityContext:
+          runAsUser: 1000
+        volumeMounts:
+        - name: vespa-var
+          mountPath: /opt/vespa/var
+        - name: vespa-logs
+          mountPath: /opt/vespa/logs
+        envFrom:
+        - configMapRef:
+            name: vespa-config
+  volumeClaimTemplates:
+  - metadata:
+      name: vespa-var
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 256Gi
+  - metadata:
+      name: vespa-logs
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 64Gi
+
+

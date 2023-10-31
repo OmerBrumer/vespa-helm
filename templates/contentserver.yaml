@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vespa-content
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: vespa-content
+      name: vespa-internal
+  serviceName: vespa-internal
+  template:
+    metadata:
+      labels:
+        app: vespa-content
+        name: vespa-internal
+    spec:
+      initContainers:
+      - name: chown-var
+        securityContext:
+          runAsUser: 0
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000 /opt/vespa/var"]
+        volumeMounts:
+        - name: vespa-var
+          mountPath: /opt/vespa/var
+      containers:
+      - name: vespa-content
+        image: vespaengine/vespa
+        args: ["services"]
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: vespa-config
+        securityContext:
+          runAsUser: 1000
+        volumeMounts:
+        - name: vespa-var
+          mountPath: /opt/vespa/var
+        resources:
+        requests:
+          memory: 32Gi
+          cpu: 4      
+        limits:
+          memory: 32Gi
+          cpu: 4
+      volumes:
+      - name: vespa-var
+        persistentVolumeClaim:
+          claimName: vespa-pvc-var
+  volumeClaimTemplates:
+  - metadata:
+      name: vespa-var
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 256Gi
+
